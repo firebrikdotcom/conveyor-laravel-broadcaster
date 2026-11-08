@@ -1,9 +1,5 @@
 <p align="center">
-  <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/conveyor-logo-dark.svg">
-  <source media="(prefers-color-scheme: light)" srcset="assets/conveyor-logo-light.svg">
-  <img width="96" height="96" style="max-height: 96px; max-width: 96px;" src="assets/conveyor-logo-light.svg" alt="Conveyor Laravel Broadcaster">
-  </picture>
+  <img width="96" height="96" src="assets/conveyor-logo.svg" alt="Conveyor Laravel Broadcaster">
 </p>
 
 # Conveyor Laravel Broadcaster
