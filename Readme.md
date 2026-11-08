@@ -1,12 +1,16 @@
-<picture>
+<p align="center">
+  <picture>
   <source media="(prefers-color-scheme: dark)" srcset="assets/conveyor-logo-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/conveyor-logo-light.svg">
-  <img src="assets/conveyor-logo-light.svg" alt="Conveyor Laravel Broadcaster" width="360">
-</picture>
+  <img width="96" height="96" style="max-height: 96px; max-width: 96px;" src="assets/conveyor-logo-light.svg" alt="Conveyor Laravel Broadcaster">
+  </picture>
+</p>
 
 # Conveyor Laravel Broadcaster
 
-Use [Socket Conveyor](https://github.com/firebrikdotcom/socket-conveyor) as a Laravel broadcasting driver. Composer package: [`kanata-php/conveyor-laravel-broadcaster`](https://packagist.org/packages/kanata-php/conveyor-laravel-broadcaster).
+Use [Socket Conveyor](https://github.com/firebrikdotcom/socket-conveyor) as a Laravel broadcasting driver. Composer package: [`firebrikdotcom/conveyor-laravel-broadcaster`](https://packagist.org/packages/firebrikdotcom/conveyor-laravel-broadcaster).
+
+The `firebrikdotcom/*` Composer namespace is being prepared. Registration and release publication are pending; existing installations still use `kanata-php/conveyor-laravel-broadcaster`.
 
 ## Requirements
 
@@ -14,12 +18,12 @@ Release **0.3.0** requires PHP **8.3+** and Laravel **13+**. The development sui
 
 Run a Conveyor server exposing `/conveyor/message` and `/conveyor/auth`. The Laravel application communicates over HTTP(S), so it does **not** need OpenSwoole or a local Conveyor server installation. Optional server-side user-association helpers accept Socket Conveyor's `UserAssocPersistenceInterface`; use them in a separately provisioned compatible server process. Unit tests use isolated copies of that optional interface, not a running WebSocket server.
 
-The PHP [`conveyor-server-client`](https://packagist.org/packages/kanata-php/conveyor-server-client) is a separate WebSocket integration. This driver does not call its API or require its forthcoming release.
+The PHP [`conveyor-server-client`](https://packagist.org/packages/firebrikdotcom/conveyor-server-client) is a separate WebSocket integration. This driver does not call its API or require its forthcoming release.
 
 ## Install
 
 ```sh
-composer require kanata-php/conveyor-laravel-broadcaster:^0.3
+composer require firebrikdotcom/conveyor-laravel-broadcaster:^0.3
 php artisan vendor:publish --provider='Kanata\LaravelBroadcaster\ConveyorServiceProvider'
 php artisan install:broadcasting --without-reverb --without-node
 ```
@@ -145,7 +149,7 @@ composer archive --format=zip --dir=coverage --file=conveyor-laravel-broadcaster
 
 Tests require PDO SQLite. Coverage requires Xdebug or PCOV configured to include `src/`. The archive excludes development tooling, tests, vendor files and the lockfile. CI tests PHP 8.3, 8.4 and 8.5, runs analysis/style/security checks and prepares an archive; it never publishes.
 
-Publication uses the existing Packagist identity and a Git tag, after release approval. The registered Packagist repository currently uses the older `kanata-php` GitHub URL, which redirects to `firebrikdotcom`; its maintainer should verify webhook/auto-update ownership before release. See [CHANGELOG.md](CHANGELOG.md) for release notes. No credentials are required for local checks.
+Register the new `firebrikdotcom/conveyor-laravel-broadcaster` Packagist identity from [this repository](https://github.com/firebrikdotcom/conveyor-laravel-broadcaster), verify maintainer and webhook access, then publish and verify the approved `0.3.0` tag. The new install command requires that registration and release. Keep the previous `kanata-php/conveyor-laravel-broadcaster` package available for existing installations. See [CHANGELOG.md](CHANGELOG.md) for release notes. No credentials are required for local checks.
 
 ## License
 

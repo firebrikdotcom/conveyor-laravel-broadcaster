@@ -1,5 +1,5 @@
 {
-    "name": "kanata-php/conveyor-laravel-broadcaster",
+    "name": "firebrikdotcom/conveyor-laravel-broadcaster",
     "description": "Conveyor Laravel Broadcaster",
     "license": "MIT",
     "autoload": {
@@ -59,7 +59,7 @@
     },
     "type": "library",
     "suggest": {
-        "kanata-php/socket-conveyor": "Optional server-side user association integration; run the WebSocket server separately."
+        "firebrikdotcom/socket-conveyor": "Optional server-side user association integration; run the WebSocket server separately."
     },
     "scripts": {
         "test": "phpunit --no-coverage",
@@ -84,5 +84,11 @@
             "/grumphp.yml",
             "/Makefile"
         ]
+    },
+    "homepage": "https://github.com/firebrikdotcom/conveyor-laravel-broadcaster",
+    "support": {
+        "issues": "https://github.com/firebrikdotcom/conveyor-laravel-broadcaster/issues",
+        "source": "https://github.com/firebrikdotcom/conveyor-laravel-broadcaster",
+        "docs": "https://github.com/firebrikdotcom/conveyor-laravel-broadcaster#readme"
     }
 }
