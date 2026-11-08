@@ -72,7 +72,7 @@ class ConveyorDriverTest extends TestCase
         $this->actingAs($user);
 
         $response = $this->makeDriver()->validAuthenticationResponse(
-            new Request(),
+            (new Request())->setUserResolver(fn () => $user),
             null,
         );
 

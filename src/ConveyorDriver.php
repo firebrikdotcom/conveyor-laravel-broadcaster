@@ -30,6 +30,10 @@ class ConveyorDriver extends BaseBroadcaster
      */
     public function auth($request)
     {
+        if (empty($request->channel_name)) {
+            throw new AccessDeniedHttpException();
+        }
+
         $channelName = $this->normalizeChannelName(
             channel: $request->channel_name,
         );
@@ -57,8 +61,10 @@ class ConveyorDriver extends BaseBroadcaster
      */
     public function validAuthenticationResponse($request, $result)
     {
-        /** @var Authenticatable $user */
-        $user = auth()->user();
+        $user = $this->retrieveUser($request, $this->normalizeChannelName($request->channel_name ?? ''));
+        if (null === $user) {
+            throw new AccessDeniedHttpException();
+        }
 
         return [
             'auth' => JwtToken::create(

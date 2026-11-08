@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 class Conveyor
 {
     /**
-     * @param array<int, PrivateChannel|Channel> $channels
+     * @param array<int, string|PrivateChannel|Channel> $channels
      * @param string $event
      * @param array<string, mixed> $payload
      */
@@ -22,9 +22,9 @@ class Conveyor
 
         foreach ($channels as $channel) {
             Http::post($url, [
-                'channel' => $channel->name,
-                'message' => json_encode($payload),
-            ]);
+                'channel' => (string) $channel,
+                'message' => json_encode($payload, JSON_THROW_ON_ERROR),
+            ])->throw();
         }
     }
 
@@ -46,6 +46,6 @@ class Conveyor
             'channel' => $channel,
         ];
 
-        return (string) Http::post($conveyorUrl, $body)->json('auth', '');
+        return (string) Http::post($conveyorUrl, $body)->throw()->json('auth', '');
     }
 }

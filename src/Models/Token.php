@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as DefaultUser;
 /**
  * @property string $token
  * @property int|null $uses
- * @property int|null $use_limit
+ * @property int|null $allowed_uses
  * @property int $user_id
  * @property string|null $expire_at
  *
@@ -61,14 +61,22 @@ class Token extends Model
 
     public function consume(): self
     {
+        if (null !== $this->expire_at && \Illuminate\Support\Carbon::parse($this->expire_at)->isPast()) {
+            $this->delete();
+            throw new \Illuminate\Auth\Access\AuthorizationException('Token expired.');
+        }
         if (null === $this->uses) {
             return $this;
         }
 
-        if ($this->uses < 2) {
-            $this->delete();
+        // Conditional writes serialize consumption even when callers loaded stale models.
+        $remaining = $this->newModelQuery()->whereKey($this->getKey());
+        if ((clone $remaining)->where('uses', '>', 1)->decrement('uses') > 0) {
+            $this->uses--;
+        } elseif ((clone $remaining)->where('uses', 1)->delete() > 0) {
+            $this->exists = false;
         } else {
-            $this->decrement('uses');
+            throw new \Illuminate\Auth\Access\AuthorizationException('Token exhausted.');
         }
 
         return $this;

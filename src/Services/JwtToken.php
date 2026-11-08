@@ -89,7 +89,11 @@ class JwtToken
         $tokenData['token'] = JWT::encode($payload, $name, JwtToken::HS256_ALGORITHM);
 
         if (null !== $useLimit) {
-            $tokenData['use_limit'] = $useLimit;
+            if ($useLimit < 1) {
+                throw new \InvalidArgumentException('Token use limit must be positive.');
+            }
+            $tokenData['allowed_uses'] = $useLimit;
+            $tokenData['uses'] = $useLimit;
         }
 
         $tokenModel = new Token();

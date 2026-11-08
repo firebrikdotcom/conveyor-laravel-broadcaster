@@ -1,129 +1,91 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="assets/conveyor-logo-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="assets/conveyor-logo-light.svg">
+  <img src="assets/conveyor-logo-light.svg" alt="Conveyor Laravel Broadcaster" width="360">
+</picture>
 
 # Conveyor Laravel Broadcaster
 
-This is a Laravel Integration for [**Socket Conveyor**](http://socketconveyor.com). It allows you to use the Conveyor WebSocket server as a broadcasting driver for Laravel. This package doesn't need [**Jacked Server**](https://github.com/jacked-php/jacked-server), but just know that that web server is great!
-
-This package allows the usage of Conveyor as a broadcasting driver in Laravel.
-
-> To understand how to broadcast with Laravel, visit [Broadcasting](https://laravel.com/docs/11.x/broadcasting).
+Use [Socket Conveyor](https://github.com/firebrikdotcom/socket-conveyor) as a Laravel broadcasting driver. Composer package: [`kanata-php/conveyor-laravel-broadcaster`](https://packagist.org/packages/kanata-php/conveyor-laravel-broadcaster).
 
 ## Requirements
 
-- PHP `^8.2`
-- Laravel 11 or 12
-- A running Conveyor WebSocket server (see [Extra](#extra-simple-conveyor-server-for-this-example))
+Release **0.3.0** requires PHP **8.3+** and Laravel **13+**. The development suite uses PHP **8.4.1+** and PHPUnit 13; CI also tests the PHP 8.3 runtime with PHPUnit 12.5. PHP 8.5 is supported.
 
-> The companion server package [`kanata-php/socket-conveyor`](https://packagist.org/packages/kanata-php/socket-conveyor) declares `ext-openswoole: ^22`. This package overrides the platform requirement via `config.platform` in `composer.json`, so newer openswoole versions install cleanly without `--ignore-platform-req` flags.
+Run a Conveyor server exposing `/conveyor/message` and `/conveyor/auth`. The Laravel application communicates over HTTP(S), so it does **not** need OpenSwoole or a local Conveyor server installation. Optional server-side user-association helpers accept Socket Conveyor's `UserAssocPersistenceInterface`; use them in a separately provisioned compatible server process. Unit tests use isolated copies of that optional interface, not a running WebSocket server.
 
-## Quick Start
+The PHP [`conveyor-server-client`](https://packagist.org/packages/kanata-php/conveyor-server-client) is a separate WebSocket integration. This driver does not call its API or require its forthcoming release.
 
-**Table of Contents**
+## Install
 
-- [Step 1: Install the package via composer](#step-1-install-the-package-via-composer)
-- [Step 2: Publish the configuration](#step-2-publish-the-configuration)
-- [Step 3: Add Service Provider](#step-3-add-service-provider)
-- [Step 4: Enable Laravel broadcasting](#step-4-enable-laravel-broadcasting)
-- [Step 5: Add broadcasting config](#step-5-add-broadcasting-config)
-- [Step 6: Set configuration](#step-6-set-configuration)
-- [Step 7: Create the tokens table](#step-7-create-the-tokens-table)
-- [Step 8: Install the Conveyor JS Client](#step-8-install-the-conveyor-js-client)
-- [Extra: Simple Conveyor Server for this example](#extra-simple-conveyor-server-for-this-example)
-
-#### Step 1: Install the package via composer
-
-```bash
-composer require kanata-php/conveyor-laravel-broadcaster
-```
-
-#### Step 2: Publish the configuration
-
-```bash
-php artisan vendor:publish --provider="Kanata\LaravelBroadcaster\ConveyorServiceProvider"
-```
-
-#### Step 3: Add Service Provider
-
-Laravel 10 backwards:
-
-```php
-<?php
-return [
-    // ...
-    'providers' => [
-        // ...
-        Kanata\LaravelBroadcaster\ConveyorServiceProvider::class,
-    ],
-    // ...
-];
-```
-
-Laravel 11 onwards:
-
-```php
-<?php
-
-return [
-    // ...
-    Kanata\LaravelBroadcaster\ConveyorServiceProvider::class,
-];
-```
-
-#### Step 4: Enable Laravel broadcasting
-
-> This is for Laravel 11 and forward, if in any other version just skip this step!
-
-```shell
+```sh
+composer require kanata-php/conveyor-laravel-broadcaster:^0.3
+php artisan vendor:publish --provider='Kanata\LaravelBroadcaster\ConveyorServiceProvider'
 php artisan install:broadcasting --without-reverb --without-node
 ```
 
-#### Step 5: Add broadcasting config
-
-Add the following to your `config/broadcasting.php` file:
+Laravel discovers the service provider automatically. Add this entry **inside `connections`** in `config/broadcasting.php`:
 
 ```php
-<?php
-
-return [
-    // ...
-    'conveyor' => [
-        'driver' => 'conveyor',
-        'protocol' => env('CONVEYOR_PROTOCOL', 'ws'),
-        'host' => env('CONVEYOR_URI', 'localhost'),
-        'port' => env('CONVEYOR_PORT', 8181),
-        'query' => env('CONVEYOR_QUERY', ''),
-    ],
-];
+'connections' => [
+    // Other connections...
+    'conveyor' => ['driver' => 'conveyor'],
+],
 ```
 
-#### Step 6: Set configuration
-
-Set the configurations for the WebSocket server in the `.env` file:
+Set the transport in `.env`; the published `config/conveyor.php` is the single source for host, port, protocol and query:
 
 ```dotenv
-# ...
 BROADCAST_CONNECTION=conveyor
-# ...
+CONVEYOR_PROTOCOL=ws
 CONVEYOR_URI=127.0.0.1
-CONVEYOR_PORT=8181
-CONVEYOR_QUERY="token=my-secure-conveyor-token"
-# ...
+CONVEYOR_PORT=8002
+CONVEYOR_QUERY="token=your-server-secret"
 ```
 
-> `CONVEYOR_QUERY` is the url query where we add the token you set to protect your WebSocket server.
+`ws` selects HTTP and `wss` selects HTTPS for the server API. Use `wss` outside trusted local networks. Keep the server secret on the backend. An empty query disables token retrieval and `Conveyor::getToken()` returns an empty string.
 
-#### Step 7: Create the tokens table
+## Broadcast an event
 
-This package issues short-lived JWT tokens stored in a `conveyor_tokens` table. The package no longer ships a migration, so you must add one in your application:
-
-```bash
-php artisan make:migration create_conveyor_tokens_table
-```
-
-Then in the generated migration:
+Follow [Laravel broadcasting](https://laravel.com/docs/13.x/broadcasting) to register your authorization callbacks and authenticated broadcasting routes. A minimal event is:
 
 ```php
-<?php
+namespace App\Events;
 
+use Illuminate\Broadcasting\Channel;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+
+class MessageSent implements ShouldBroadcastNow
+{
+    public function __construct(public string $message) {}
+
+    public function broadcastOn(): array
+    {
+        return [new Channel('room')];
+    }
+}
+
+// In an application controller:
+event(new \App\Events\MessageSent('Hello Conveyor'));
+```
+
+`ShouldBroadcast` also works when a queue worker is running. The driver sends the JSON event payload to each channel; the Laravel event name is currently not transmitted as a separate field. HTTP errors and invalid JSON throw, allowing queued jobs to fail or retry instead of silently losing messages.
+
+For browser integration, install `socket-conveyor-client` and follow its current API documentation. Fetch private-channel credentials only from an authenticated, authorized endpoint. For example, after authorizing access to the requested channel on the backend:
+
+```php
+use Kanata\LaravelBroadcaster\Conveyor;
+
+$token = Conveyor::getToken('private-room');
+```
+
+This asks the server for a channel token; it does not itself authorize your application user. Never put the server query secret in browser JavaScript, render untrusted messages with `innerHTML`, or log users in automatically for a demo.
+
+## Optional local token storage
+
+`conveyor:token`, `ConveyorDriver::validAuthenticationResponse()` and the server-side token helpers use a `conveyor_tokens` table. Create an application migration:
+
+```php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -152,154 +114,39 @@ return new class extends Migration {
 };
 ```
 
-```bash
+```sh
 php artisan migrate
+php artisan conveyor:token 1
 ```
 
-#### Step 8: Install the [Conveyor JS Client](https://www.npmjs.com/package/socket-conveyor-client):
+Configure `conveyor.database-driver` with a Laravel connection name if these records live outside your default database. `auth.providers.users.model` selects the related user model. Custom user IDs must be integers for these helpers.
 
-```bash
-npm install socket-conveyor-client
+`JwtToken::create($name, $userId, $expire, $useLimit)` takes expiry in seconds (or `null`) and a positive use count (or `null` for unlimited). JWT 7 requires an HS256 signing name of at least **32 bytes**. Generated command and driver names meet that requirement. Store those signing names securely. Expired records are rejected; limited tokens persist both `allowed_uses` and remaining `uses`. Older tokens created with a limit may have `uses = null` because the previous implementation dropped the limit: revoke or backfill those records before upgrading if they were intended to be limited.
+
+## Upgrade from 0.2
+
+0.3.0 is the next breaking minor release while the package is pre-1.0:
+
+- Upgrade PHP 8.2 to 8.3+ and Laravel 11/12 to 13+.
+- Upgrade JWT 6 to 7 and use signing names of at least 32 bytes.
+- Guzzle 8 is now a declared runtime dependency, alongside the Illuminate components used by the driver. Resolve application dependency conflicts before deployment.
+- Handle HTTP/JSON exceptions, expired-token rejection and enforced token use limits.
+- Remove any copied `config.platform.ext-openswoole` override. No fake platform extension is needed.
+
+## Development and release checks
+
+```sh
+composer install
+composer check
+composer coverage
+composer audit
+composer archive --format=zip --dir=coverage --file=conveyor-laravel-broadcaster-0.3.0
 ```
 
-> Important: Don't forget to run `npm run build`!
+Tests require PDO SQLite. Coverage requires Xdebug or PCOV configured to include `src/`. The archive excludes development tooling, tests, vendor files and the lockfile. CI tests PHP 8.3, 8.4 and 8.5, runs analysis/style/security checks and prepares an archive; it never publishes.
 
-Add this to the bootstrap.js file of your Laravel app so the Conveyor client is available globally:
-
-```js
-import Conveyor from "socket-conveyor-client";
-
-window.Conveyor = Conveyor;
-```
-
-Remember to run `npm install` and `npm run dev` or `npm run prod` to compile the assets.
-
-> **Info:** If you want to send one-off messages to the Conveyor WebSocket server, you can just dispatch an event like follows:
-> ```php
-> <?php
-> 
-> namespace App\Events;
-> 
-> use Illuminate\Broadcasting\InteractsWithBroadcasting;
-> use Illuminate\Broadcasting\PrivateChannel;
-> use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
-> 
-> class TestEvent implements ShouldBroadcastNow
-> {
->     use InteractsWithBroadcasting;
-> 
->     public function __construct(
->         public string $message,
->         public string $channel,
->     ) {
->         $this->broadcastVia('conveyor');
->     }
-> 
->     public function broadcastOn(): array
->     {
->         return [
->             new PrivateChannel($this->channel),
->         ];
->     }
-> }
-> ```
->
-> ```php
-> event(new App\Events\TestEvent( message: 'my message', channel: 'my-channel'));
-> ```
-
-> **Important**: notice that we are using `ShouldBroadcastNow` instead of `ShouldBroadcast`. Conveyor doesn't need queueing and is much faster this way. If you want, you can still use queues.
-
-
-Example of usage in a view with authorization at this point:
-
-```html
-<html>
-<head>
-    <title>WS Client</title>
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body>
-
-<textarea id="msg"></textarea>
-<button id="btn-base">Base</button>
-<button id="btn-broadcast">Broadcast</button>
-<ul id="output"></ul>
-
-<script type="text/javascript">
-    // page elements
-    const msg = document.getElementById('msg')
-    const btnBase = document.getElementById('btn-base')
-    const btnBroadcast = document.getElementById('btn-broadcast')
-    const output = document.getElementById('output')
-
-    const connect = () => {
-        window.conveyor = new window.Conveyor({
-            protocol: '{{ $protocol }}',
-            uri: '{{ $uri }}',
-            port: {{ $wsPort }},
-            channel: '{{ $channel }}',
-            token: '{{ \Kanata\LaravelBroadcaster\Conveyor::getToken($channel) }}',
-            onMessage: (e) => output.innerHTML = e,
-            onReady: () => {
-                btnBase.addEventListener('click', () => window.conveyor.send(msg.value))
-                btnBroadcast.addEventListener('click', () => window.conveyor.send(msg.value, 'broadcast-action'))
-            },
-        });
-    };
-
-    document.addEventListener("DOMContentLoaded", () => connect());
-</script>
-</body>
-</html>
-```
-
-Then, add the route for this view at your `routes/web.php` file:
-
-```php
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Auth;
-
-Route::get('/ws-client', function () {
-    Auth::loginUsingId(1); // here we authorize for the sake of the example.
-
-    return view('ws-client', [
-        'protocol' => config('broadcasting.connections.conveyor.protocol'),
-        'uri' => config('broadcasting.connections.conveyor.host'),
-        'wsPort' => config('broadcasting.connections.conveyor.port'),
-        'channel' => 'private-my-channel',
-    ]);
-});
-```
-
-#### Extra: Simple Conveyor Server for this example
-
-You can use this simple server to test your broadcasting (and in production...):
-
-```php
-<?php
-// file: server.php
-
-include __DIR__ . '/vendor/autoload.php';
-
-use Conveyor\ConveyorServer;
-use Conveyor\Events\MessageReceivedEvent;
-use Conveyor\Events\PreServerStartEvent;
-
-(new ConveyorServer())
-    // if you want to see messages in the console 
-    ->eventListeners([
-        Conveyor\Constants::WEBSOCKET_SERVER_TOKEN => 'my-secure-conveyor-token',
-        Conveyor\Constants::EVENT_MESSAGE_RECEIVED => function (MessageReceivedEvent $event) {
-            var_dump($event->data);
-        },
-    ])
-    ->port(8181)
-    ->start();
-```
-
-Remember to install conveyor with `composer require kanata-php/socket-conveyor` and run the server with `php server.php`.
+Publication uses the existing Packagist identity and a Git tag, after release approval. The registered Packagist repository currently uses the older `kanata-php` GitHub URL, which redirects to `firebrikdotcom`; its maintainer should verify webhook/auto-update ownership before release. See [CHANGELOG.md](CHANGELOG.md) for release notes. No credentials are required for local checks.
 
 ## License
 
-Released under the [MIT License](LICENSE).
+[MIT](LICENSE).
