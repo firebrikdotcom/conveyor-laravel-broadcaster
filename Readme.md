@@ -10,7 +10,7 @@
 
 Use [Socket Conveyor](https://github.com/firebrikdotcom/socket-conveyor) as a Laravel broadcasting driver. Composer package: [`firebrikdotcom/conveyor-laravel-broadcaster`](https://packagist.org/packages/firebrikdotcom/conveyor-laravel-broadcaster).
 
-The `firebrikdotcom/*` Composer namespace is being prepared. Registration and release publication are pending; existing installations still use `kanata-php/conveyor-laravel-broadcaster`.
+Version **0.3.0** is published as `firebrikdotcom/conveyor-laravel-broadcaster` on Packagist. Existing projects using `kanata-php/conveyor-laravel-broadcaster` can migrate by updating their Composer requirement; the previous package remains available.
 
 ## Requirements
 
@@ -18,7 +18,7 @@ Release **0.3.0** requires PHP **8.3+** and Laravel **13+**. The development sui
 
 Run a Conveyor server exposing `/conveyor/message` and `/conveyor/auth`. The Laravel application communicates over HTTP(S), so it does **not** need OpenSwoole or a local Conveyor server installation. Optional server-side user-association helpers accept Socket Conveyor's `UserAssocPersistenceInterface`; use them in a separately provisioned compatible server process. Unit tests use isolated copies of that optional interface, not a running WebSocket server.
 
-The PHP [`conveyor-server-client`](https://packagist.org/packages/firebrikdotcom/conveyor-server-client) is a separate WebSocket integration. This driver does not call its API or require its forthcoming release.
+The PHP [`conveyor-server-client`](https://packagist.org/packages/firebrikdotcom/conveyor-server-client) is a separate WebSocket integration. This driver does not call its API or depend on that package.
 
 ## Install
 
@@ -129,7 +129,7 @@ Configure `conveyor.database-driver` with a Laravel connection name if these rec
 
 ## Upgrade from 0.2
 
-0.3.0 is the next breaking minor release while the package is pre-1.0:
+0.3.0 is a breaking minor release while the package is pre-1.0:
 
 - Upgrade PHP 8.2 to 8.3+ and Laravel 11/12 to 13+.
 - Upgrade JWT 6 to 7 and use signing names of at least 32 bytes.
@@ -149,7 +149,7 @@ composer archive --format=zip --dir=coverage --file=conveyor-laravel-broadcaster
 
 Tests require PDO SQLite. Coverage requires Xdebug or PCOV configured to include `src/`. The archive excludes development tooling, tests, vendor files and the lockfile. CI tests PHP 8.3, 8.4 and 8.5, runs analysis/style/security checks and prepares an archive; it never publishes.
 
-Register the new `firebrikdotcom/conveyor-laravel-broadcaster` Packagist identity from [this repository](https://github.com/firebrikdotcom/conveyor-laravel-broadcaster), verify maintainer and webhook access, then publish and verify the approved `0.3.0` tag. The new install command requires that registration and release. Keep the previous `kanata-php/conveyor-laravel-broadcaster` package available for existing installations. See [CHANGELOG.md](CHANGELOG.md) for release notes. No credentials are required for local checks.
+Packagist registers `firebrikdotcom/conveyor-laravel-broadcaster` from [this repository](https://github.com/firebrikdotcom/conveyor-laravel-broadcaster), with **0.3.0** published under the new name. For future releases, verify maintainer and webhook access, publish a new version tag, and confirm Packagist indexes that exact commit. The previous `kanata-php/conveyor-laravel-broadcaster` package remains available for existing installations. See [CHANGELOG.md](CHANGELOG.md) for release notes. No credentials are required for local checks.
 
 ## License
 
